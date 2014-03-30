@@ -85,6 +85,7 @@ get '/secret' => sub {
 };
 
 app->start;
+
 __DATA__
 
 @@ index.html.ep
@@ -120,6 +121,13 @@ Hello World!
 Hello template !
 
 @@ layouts/gray.html.ep
+% my $ascii_art = qq {
+%     __     __  ___         _        __ _       _                   __  
+%    / /    /  |/  /___     (_)___   / /(_)____ (_)___  __ __ ___    \\ \\ 
+%   < <    / /|_/ // _ \\   / // _ \\ / // // __// // _ \\/ // /(_-<     > >
+%    \\_\\  /_/  /_/ \\___/__/ / \\___//_//_/ \\__//_/ \\___/\\_,_//___/    /_/ 
+%                      |___/                                             
+%};
 <!DOCTYPE html>
 <html>
   <head>
@@ -128,7 +136,12 @@ Hello template !
       * { background-color: #DDD; }
     </style>
   </head>
-  <body><%= content %></body>
+  <body>
+    <%= content %>
+    <footer>
+      <pre><%= $ascii_art %></pre>
+    </footer>
+  </body>
 </html>
 
 @@ block.html.ep
