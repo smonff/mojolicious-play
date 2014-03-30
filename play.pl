@@ -1,8 +1,22 @@
 #!/usr/bin/env perl
 use Mojolicious::Lite;
 
+
+# Text to ASCII Art Generato r
+# http://www.patorjk.com/software/taag/
+my $ascii_art = qq {
+     __     __  ___         _        __ _       _                   __  
+    / /    /  |/  /___     (_)___   / /(_)____ (_)___  __ __ ___    \\ \\ 
+   < <    / /|_/ // _ \\   / // _ \\ / // // __// // _ \\/ // /(_-<     > >
+    \\_\\  /_/  /_/ \\___/__/ / \\___//_//_/ \\__//_/ \\___/\\_,_//___/    /_/ 
+                      |___/                                             
+};
+
 # Documentation browser under "/perldoc"
 plugin 'PODRenderer';
+say $ascii_art;
+
+my $log = Mojo::Log->new;
 
 get '/with_layout';
 
@@ -33,7 +47,8 @@ post '/title' => sub {
 get '/stash' => sub {
     my $self = shift;
     $self->stash(one => 23);
-    $self->coucou("Coucou");
+
+    $log->debug("C'est du debug " . $self->stash->{one});
     $self->render('stash', two => 24);
 };
 
@@ -66,16 +81,8 @@ helper whois => sub {
 get '/secret' => sub {
     my $self = shift;
     my $user = $self->whois;
-    $self->app->log->debug("Request from $user");
+    $log->debug("Request from $user");
 };
-
-# Home made helper for logging
-# Make possible to log through $self->coucou('yé')
-helper coucou => sub {
-    my ($self, $token) = @_;
-    $self->app->log->debug($token);
-};
-
 
 app->start;
 __DATA__
