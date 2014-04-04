@@ -17,5 +17,28 @@ $t->get_ok('/with_layout')->status_is(200);
 $t->get_ok('/with_block')->status_is(200);
 $t->get_ok('/secret')->status_is(200);
 
+my $placeholder = "foo";
+$t->get_ok(
+    "/placeholder/$placeholder")->status_is(
+	200)->content_like(
+	    qr/Our <code>:anything<\/code> placeholder matched <code>$placeholder<\/code>/
+	);
+
+$placeholder = "another";
+$t->get_ok(
+    "/$placeholder/placeholder")->status_is(
+    200)->content_like(
+    qr/Our <code>:anything<\/code> placeholder matched <code>$placeholder<\/code>/
+);
+
+my $name = "smonff";
+$t->get_ok(
+    "/$name/hello")->status_is(
+    200)->content_like(
+    qr/Your name is $name/
+);
+
+$t->get_ok("/everything/../")->status_is(200);
+
 done_testing();
 

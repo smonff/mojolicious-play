@@ -25,6 +25,7 @@ get '/' => sub {
     $self->render;
 } => 'index';
 
+# Find the right template automatically
 get '/hello';
 
 # Route with placeholder
@@ -84,13 +85,67 @@ get '/secret' => sub {
     $log->debug("Request from $user");
 };
 
+# /placeholder/foo
+# /placeholder/foooo
+get '/placeholder/:anything' => sub {
+    my $self = shift;
+    my $any  = $self->stash('anything');
+    $log->debug("Our :anything placeholder matched $any");
+    $self->render(text => "Our <code>:anything</code> placeholder matched <code>$any</code>");
+};
+
+# /foo/placeholder
+# /fooooo/placeholder
+get '/(:anything)/placeholder' => sub {
+    my $self = shift;
+    my $any = $self->param('anything');
+    $self->render(text => "Our <code>:anything</code> placeholder matched <code>$any</code>");
+};
+
+# /foo/hello
+# /fooo/hello
+# /fooo.123/hello
+get '/#you/hello' => 'groovy';
+
+# Matches everything including '/' and '..'
+# It means you can "cd ../"
+get '/everything/*you' => 'groovyverything';
+
+# PUT /hello
+put '/put/:something' => sub {
+    my $self = shift;
+    my $size = length $self->req->body;
+    $self->render(text => "You uploaded <code>$size</code> bites to <code>/put/hello</code>");
+};
+
+# HTTP method
+# * /whatever
+any '/whatever' => sub {
+    my $self = shift;
+    my $method = $self->req->method;
+    $self->render(text => "You called <code>/whatever</code> with <code>$method</code>");
+};
+
+# Optionnal placeholder
+# /optional
+# /optional/placeholder
+get '/optional/:placeholder' => {name => ' Sebastian ', day => 'Monday'} =>
+sub {
+    my $self = shift;
+    $self->render('optional', format => 'txt');
+};
+
 app->start;
 
 __DATA__
 
 @@ index.html.ep
 % layout 'gray';
-<p>We damn ♥  Mojolicious!</p>
+<p>
+  We damn ♥  Mojolicious!  
+  This is ready-made examples of 
+  <%= link_to 'Mojolicious::Lite' => 'perldoc/Mojolicious/Lite' %> tutorial.
+</p>
 <ul>
   <li><%= link_to Hello  => 'hello' %></li>
   <li><%= link_to Reload => 'index' %></li>
@@ -101,6 +156,12 @@ __DATA__
   <li><%= link_to 'Layouts' => 'with_layout' %></li>
   <li><%= link_to Blocks => 'with_block' %></li>
   <li><%= link_to 'Whois helper' => 'secret' %></li>
+  <li><%= link_to 'Placeholders' => 'placeholder' %></li>
+  <li><%= link_to 'Another placeholders' => 'another/placeholder' %></li>
+  <li><%= link_to 'Relaxed placeholders' => 'smonff/hello' %></li>
+  <li><%= link_to 'Wilcard placeholders' => 'everything/smonff' %></li>
+  <li><%= link_to 'Whatever method' => 'whatever' %></li>
+  <li><%= link_to 'Optional placeholder' => 'optional/smonff' %></li>
 </ul>
 
 @@ clock.html.ep
@@ -121,6 +182,7 @@ Hello World!
 Hello template !
 
 @@ layouts/gray.html.ep
+% # Would like to make an only declaration, we actually have both
 % my $ascii_art = qq {
 %     __     __  ___         _        __ _       _                   __  
 %    / /    /  |/  /___     (_)___   / /(_)____ (_)___  __ __ ___    \\ \\ 
@@ -133,7 +195,12 @@ Hello template !
   <head>
     <title><%= title %></title>
     <style>
-      * { background-color: #DDD; }
+      html {
+	border: 1em solid #AAA;
+	background-color: #DDD;
+	padding: 10px;
+	height: 100%;
+      }
     </style>
   </head>
   <body>
@@ -155,4 +222,19 @@ Hello template !
 
 @@ secret.html.ep
 % layout 'gray';
-We know how you are <code><%= whois %></code>
+We know how you are <pre><%= whois %></pre>
+
+@@ groovy.html.ep
+% layout 'gray';
+Your name is <%= $you %>
+
+@@ groovyverything.html.ep
+% layout 'gray';
+<p>Your name is <%= $you %></p>
+<p>
+  Try to go to <a href="/everything/../"><code>/everything/../</code></a>
+  (just like in a <code>cd</code>)
+</p>
+
+@@ optional.txt.ep
+My name is  <%= $name =%> and it is <%= $day %> using placeholder <%= " $placeholder" =%>
