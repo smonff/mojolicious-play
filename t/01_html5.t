@@ -40,5 +40,7 @@ $t->get_ok(
 
 $t->get_ok("/everything/../")->status_is(200);
 
+$t->get_ok('/detection.json')->status_is(200)->content_like(qr/"detected": true/);
+
 done_testing();
 

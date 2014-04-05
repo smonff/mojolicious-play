@@ -2,8 +2,6 @@
 use Mojolicious::Lite;
 
 
-# Text to ASCII Art Generato r
-# http://www.patorjk.com/software/taag/
 my $ascii_art = qq {
      __     __  ___         _        __ _       _                   __  
     / /    /  |/  /___     (_)___   / /(_)____ (_)___  __ __ ___    \\ \\ 
@@ -17,6 +15,15 @@ plugin 'PODRenderer';
 say $ascii_art;
 
 my $log = Mojo::Log->new;
+
+# Code shared by all routes
+under sub {
+    my $self = shift;
+
+    $self->stash(mojo => $ascii_art);
+    $log->debug("Mojo Art defined");
+    return 1;
+};
 
 get '/with_layout';
 
@@ -135,6 +142,46 @@ sub {
     $self->render('optional', format => 'txt');
 };
 
+# Restrictive placeholder
+# only matches /restrictive/test /restrictive/lala and /restrictive/123
+any '/restrictive/:foo' => [foo => [qw(test lala 123)]] => sub {
+    my $self = shift;
+    my $foo = $self->param('foo');
+    $self->render(text => "Our :foo placeholder matched $foo");
+};
+
+# Restrictive placeholder are very powerful with regexes
+# only matches /restrictive/1 /restrictive/123 and etc.
+any '/restrictive/regex/:foo' => [foo => qr/\d+/] => sub {
+    my $self = shift;
+    my $foo = $self->param('foo');
+    $log->debug("$foo captured");
+    $self->render(text => "Our :foo placeholder matched $foo");
+};
+
+get 'detection' => sub {
+    my $self = shift;
+    $self->render('detected');
+};
+
+get 'content/negociation' => sub {
+    my $self = shift;
+    $self->respond_to(
+	json => {
+	    json => {
+		mojo => {
+		    hello => 'world',
+		    loved_frameworks => {
+			'Mojolicious' => '4.91',
+			'Catalyst' => '',
+		    }
+		}
+	    }
+	},
+	xml  => {text => '<mojo><hello>world</hello></mojo>'}
+    );
+};
+
 app->start;
 
 __DATA__
@@ -162,6 +209,17 @@ __DATA__
   <li><%= link_to 'Wilcard placeholders' => 'everything/smonff' %></li>
   <li><%= link_to 'Whatever method' => 'whatever' %></li>
   <li><%= link_to 'Optional placeholder' => 'optional/smonff' %></li>
+  <li>
+    Extension detection :
+    <%= link_to 'html' => 'detection.html' %>
+    <%= link_to 'txt' => 'detection.txt' %>
+    <%= link_to 'json' => 'detection.json' %>
+  </li>
+  <li>
+    Content negociation :
+    <%= link_to 'xml' => 'content/negociation.xml' %>
+    <%= link_to 'json' => 'content/negociation.json' %>
+  </li>
 </ul>
 
 @@ clock.html.ep
@@ -183,13 +241,6 @@ Hello template !
 
 @@ layouts/gray.html.ep
 % # Would like to make an only declaration, we actually have both
-% my $ascii_art = qq {
-%     __     __  ___         _        __ _       _                   __  
-%    / /    /  |/  /___     (_)___   / /(_)____ (_)___  __ __ ___    \\ \\ 
-%   < <    / /|_/ // _ \\   / // _ \\ / // // __// // _ \\/ // /(_-<     > >
-%    \\_\\  /_/  /_/ \\___/__/ / \\___//_//_/ \\__//_/ \\___/\\_,_//___/    /_/ 
-%                      |___/                                             
-%};
 <!DOCTYPE html>
 <html>
   <head>
@@ -206,7 +257,7 @@ Hello template !
   <body>
     <%= content %>
     <footer>
-      <pre><%= $ascii_art %></pre>
+      <pre><%= $mojo %></pre>
     </footer>
   </body>
 </html>
@@ -238,3 +289,18 @@ Your name is <%= $you %>
 
 @@ optional.txt.ep
 My name is  <%= $name =%> and it is <%= $day %> using placeholder <%= " $placeholder" =%>
+
+@@ detected.html.ep
+% layout 'gray';
+<code>HTML</code> was <strong>detected</strong> !!!
+
+@@ detected.txt.ep
+% layout 'gray';
+TXT was detected
+
+@@ detected.json.ep
+{
+    "json": {
+	"detected": true
+    }
+}
